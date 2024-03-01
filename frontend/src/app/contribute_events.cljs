@@ -8,12 +8,13 @@
      previous-siblings
      local-storage-enabled]]
    [app.editor.core :refer [active-file]]
-   [app.contribute-logic :refer
-    [file-id
+   [app.components.snippets :refer
+    [snippets
      clear-selection
+     highlight-current-snippet
      selection-node-id
-     selection-contains-snippets?
-     highlight-current-snippet]]
+     selection-contains-snippets?]]
+   [app.contribute-logic :refer [file-id]]
    [app.contribute-atoms :refer
     [how-to-fix
      error-title
@@ -21,11 +22,10 @@
      error-description
      fail-reason
      status
-     snippets
+     files
      fas
      spec
-     container
-     files]]))
+     container]]))
 
 (defn submit-form []
   (let [url (remove-trailing-slash (str "/frontend" (current-path)))
@@ -132,14 +132,6 @@
         value (.-value target)]
     (reset! fail-reason value)))
 
-;; For some reason, compiler complains it cannot infer type of the `target`
-;; variable, so I am specifying it as a workaround
-(defn on-snippet-textarea-change [^js/Event event]
-  (let [target (.-target event)
-        index (int (.-indexNumber (.-dataset (.-parentElement target))))
-        value (.-value target)]
-    (reset! snippets (assoc-in @snippets [index :comment] value))))
-
 ;; For some reason, compiler complains it cannot infer type of the `event`
 ;; variable, so I am specifying it as a workaround
 (defn on-accordion-item-show [^js/Event event]
@@ -155,15 +147,3 @@
 ;;     (js/console.log selection)
 ;;     (js/console.log selection.anchorOffset)
 ;;     (js/console.log selection.focusOffset)))
-
-(defn on-click-delete-snippet [^js/Event event]
-  (let [target (.-target event)
-        snippet-id (int (.-indexNumber (.-dataset (.-parentElement target))))]
-    ;; We don't want to remove the element entirely because we want to preserve
-    ;; snippet numbers that follows
-    (swap! snippets assoc snippet-id nil)
-
-    ;; Remove the highlight
-    (let [span (.getElementById js/document (str "snippet-" snippet-id))
-          text (.-innerHTML span)]
-      (.replaceWith span text))))

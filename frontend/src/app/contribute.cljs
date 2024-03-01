@@ -11,18 +11,23 @@
    [app.three-column-layout.core :refer
     [three-column-layout
      instructions-item
-     instructions]]
-   [app.editor.core :refer [editor]]
+     instructions
+     status-panel]]
+   [app.editor.core :refer [editor active-file]]
    [app.components.jumbotron :refer
     [render-error
      loading-screen
-     loading-icon
      render-succeeded]]
    [app.components.accordion :refer [accordion]]
+   [app.components.snippets :refer
+    [snippets
+     add-snippet
+     snippet-color-square
+     on-click-delete-snippet
+     on-snippet-textarea-change]]
    [app.contribute-atoms :refer
     [how-to-fix
      status
-     snippets
      files
      spec
      container
@@ -36,13 +41,10 @@
      build-url]]
    [app.contribute-events :refer
     [submit-form
-     add-snippet
-     on-snippet-textarea-change
      on-how-to-fix-textarea-change
      on-change-fas
      on-change-fail-reason
-     on-accordion-item-show
-     on-click-delete-snippet]]))
+     on-accordion-item-show]]))
 
 (defn set-atoms [data]
   (reset! backend-data data)
@@ -133,30 +135,12 @@
 
     (instructions-item nil "Submit")]))
 
-(defn display-error-middle-top []
-  (when @error-description
-    [:div
-     [:div {:class "alert alert-danger alert-dismissible fade show text-center"}
-      [:strong @error-title]
-      [:p @error-description]
-      [:button {:type "button" :class "btn-close" :data-bs-dismiss "alert"}]]]))
-
-(defn notify-being-uploaded []
-  (when (= @status "submitting")
-    [:h2 {:class "lead text-body-secondary"}
-     (loading-icon)
-     "  Uploading ..."]))
-
 (defn middle-column []
-  [:<>
-   (or
-    (notify-being-uploaded)
-    (display-error-middle-top))
-   [editor @files]])
+  (editor @files))
 
 (defn accordion-snippet [snippet]
   (when snippet
-    {:title "Snippet"
+    {:title [:<> (snippet-color-square (:color snippet)) "Snippet"]
      :body
      [:textarea
       {:class "form-control"
@@ -182,7 +166,8 @@
    [:label {:class "form-label"} "Interesting snippets:"]
    (when (not-empty @snippets)
      [:div {}
-      [:button {:class "btn btn-secondary btn-lg" :on-click #(add-snippet)} "Annotate selection"]
+      [:button {:class "btn btn-secondary btn-lg"
+                :on-click #(add-snippet files active-file)} "Add"]
       [:br]
       [:br]])
 
@@ -198,8 +183,8 @@
         (str "Please select interesting parts of the log files and press the "
              "'Add' button to annotate them")]
        [:button {:class "btn btn-secondary btn-lg"
-                 :on-click #(add-snippet)}
-        "Annotate selection"]]])
+                 :on-click #(add-snippet files active-file)}
+        "Add"]]])
 
    [:div {}
     [:label {:class "form-label"} "Why did the build fail?"]
@@ -261,7 +246,8 @@
       (three-column-layout
        (left-column)
        (middle-column)
-       (right-column)))
+       (right-column)
+       (status-panel @status @error-title @error-description)))
 
     :else
     (loading-screen "Please wait, fetching logs from the outside world.")))
