@@ -300,3 +300,15 @@ a:hover {
   right: 0;
   text-align: center;
 }
+
+#app-review #right-column .card-body {
+  padding: 0px;
+}
+
+#app-review #right-column .card-title {
+  background-color: var(--gray-1);
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 15px;
+  margin-bottom: 0px;
+}

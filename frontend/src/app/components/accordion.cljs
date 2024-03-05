@@ -21,7 +21,8 @@
      (:body item)
      [:div {:class "accordion-buttons"
             :data-index-number i}
-      (into [:<>] (:buttons item))]]]])
+      [:div {:class "btn-group"}
+       (into [:<>] (:buttons item))]]]]])
 
 (defn accordion-items [items]
   (doall (for [enumerated-item (map-indexed list items)

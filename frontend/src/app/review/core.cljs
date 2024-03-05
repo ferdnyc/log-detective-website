@@ -6,39 +6,54 @@
    [reagent.core :as r]
    [html-entities :as html-entities]
    [lambdaisland.fetch :as fetch]
-   [app.helpers :refer [current-path]]
+   [app.helpers :refer
+    [current-path
+     remove-trailing-slash]]
    [app.editor.core :refer [editor]]
    [app.components.accordion :refer [accordion]]
    [app.components.jumbotron :refer
     [render-error
-     loading-screen]]
+     loading-screen
+     render-succeeded]]
    [app.three-column-layout.core :refer
     [three-column-layout
      instructions-item
-     instructions]]))
+     instructions]]
+   [app.contribute-events :refer
+    [add-snippet
+     on-snippet-textarea-change
+     on-how-to-fix-textarea-change
+     on-change-fas
+     on-change-fail-reason
+     on-accordion-item-show
+     on-click-delete-snippet]]))
 
 (def files (r/atom nil))
 (def error-description (r/atom nil))
 (def error-title (r/atom nil))
+(def status (r/atom nil))
+(def snippets (r/atom []))
 
 (defn init-data-review []
-  (let [url (str "/frontend" (current-path))]
+  (let [url (str "/frontend" (remove-trailing-slash (current-path)) "/random")]
     (-> (fetch/get url {:accept :json :content-type :json})
         (.then (fn [resp]
                  (-> resp :body (js->clj :keywordize-keys true))))
         (.then (fn [data]
                  (if (:error data)
                    (do
+                     (reset! status "error")
                      (reset! error-title (:error data))
                      (reset! error-description (:description data)))
-                   (reset!
-                    files
-                    (vec (map (fn [log]
-                                ;; We must html encode all HTML characters
-                                ;; because we are going to render the log
-                                ;; files dangerously
-                                (update log :content #(.encode html-entities %)))
-                              (:logs data))))))))))
+                   (do
+                     (reset!
+                      files
+                      (vec (map (fn [log]
+                                  ;; We must html encode all HTML characters
+                                  ;; because we are going to render the log
+                                  ;; files dangerously
+                                  (update log :content #(.encode html-entities %)))
+                                (vals (:logs data))))))))))))
 
 (defn left-column []
   (instructions
@@ -75,15 +90,26 @@
 
 (defn snippet [text]
   {:title "Snippet"
-   :body [:p {} text]
+   :body
+   [:textarea
+    {:class "form-control"
+     :rows "3"
+     :placeholder "What makes this snippet relevant?"
+     :value text
+     :on-change #(on-snippet-textarea-change %)}]
    :buttons (buttons)})
 
 (defn card [title text]
   [:div {:class "card"}
    [:div {:class "card-body"}
-    [:h5 {:class "card-title"} title]
-    [:p {:class "card-text"} text]
-    (into [:<>] (buttons))]])
+    [:h6 {:class "card-title"} title]
+    [:textarea {:class "form-control" :rows 3
+                :value text
+                :placeholder "Please describe what caused the build to fail."
+                :on-change #(on-change-fail-reason %)}]
+    [:div {:class "btn-group"}
+     (into [:<>] (buttons))]]])
+
 
 (defn right-column []
   [:<>
@@ -118,8 +144,11 @@
 
 (defn review []
   (cond
-    @error-description
+    (= @status "error")
     (render-error @error-title @error-description)
+
+    (= @status "submitted")
+    (render-succeeded)
 
     @files
     (three-column-layout
