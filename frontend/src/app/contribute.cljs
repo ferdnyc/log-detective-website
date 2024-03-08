@@ -9,17 +9,21 @@
     [three-column-layout
      instructions-item
      instructions]]
-   [app.editor.core :refer [editor]]
+   [app.editor.core :refer [editor active-file]]
    [app.components.jumbotron :refer
     [render-error
      loading-screen
      loading-icon
      render-succeeded]]
    [app.components.accordion :refer [accordion]]
+   [app.components.snippets :refer
+    [snippets
+     add-snippet
+     on-click-delete-snippet
+     on-snippet-textarea-change]]
    [app.contribute-atoms :refer
     [how-to-fix
      status
-     snippets
      files
      spec
      container
@@ -33,13 +37,10 @@
      build-url]]
    [app.contribute-events :refer
     [submit-form
-     add-snippet
-     on-snippet-textarea-change
      on-how-to-fix-textarea-change
      on-change-fas
      on-change-fail-reason
-     on-accordion-item-show
-     on-click-delete-snippet]]))
+     on-accordion-item-show]]))
 
 (defn set-atoms [data]
   (reset! backend-data data)
@@ -175,7 +176,8 @@
    [:label {:class "form-label"} "Interesting snippets:"]
    (when (not-empty @snippets)
      [:div {}
-      [:button {:class "btn btn-secondary btn-lg" :on-click #(add-snippet)} "Add"]
+      [:button {:class "btn btn-secondary btn-lg"
+                :on-click #(add-snippet files active-file)} "Add"]
       [:br]
       [:br]])
 
@@ -191,7 +193,7 @@
         (str "Please select interesting parts of the log files and press the "
              "'Add' button to annotate them")]
        [:button {:class "btn btn-secondary btn-lg"
-                 :on-click #(add-snippet)}
+                 :on-click #(add-snippet files active-file)}
         "Add"]]])
 
    [:div {}
