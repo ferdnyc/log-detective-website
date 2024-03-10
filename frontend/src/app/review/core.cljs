@@ -9,7 +9,7 @@
    [app.helpers :refer
     [current-path
      remove-trailing-slash]]
-   [app.editor.core :refer [editor]]
+   [app.editor.core :refer [editor active-file]]
    [app.components.accordion :refer [accordion]]
    [app.components.jumbotron :refer
     [render-error
@@ -19,20 +19,23 @@
     [three-column-layout
      instructions-item
      instructions]]
-   [app.contribute-events :refer
-    [add-snippet
+   [app.components.snippets :refer
+    [snippets
+     add-snippet
+     add-snippet-from-backend-map
      on-snippet-textarea-change
-     on-how-to-fix-textarea-change
+     on-click-delete-snippet]]
+   [app.contribute-events :refer
+    [on-how-to-fix-textarea-change
      on-change-fas
      on-change-fail-reason
-     on-accordion-item-show
-     on-click-delete-snippet]]))
+     on-accordion-item-show]]))
 
 (def files (r/atom nil))
 (def error-description (r/atom nil))
 (def error-title (r/atom nil))
 (def status (r/atom nil))
-(def snippets (r/atom []))
+(def fas (r/atom nil))
 
 (defn init-data-review []
   (let [url (str "/frontend" (remove-trailing-slash (current-path)) "/random")]
@@ -53,7 +56,15 @@
                                   ;; because we are going to render the log
                                   ;; files dangerously
                                   (update log :content #(.encode html-entities %)))
-                                (vals (:logs data))))))))))))
+                                (vals (:logs data)))))
+
+                     ;; TODO I don't want to use reduce here
+                     (reduce (fn [x _]
+                               (add-snippet-from-backend-map
+                                files
+                                active-file
+                                x))
+                             (flatten (map (fn [x] (:snippets x)) @files))))))))))
 
 (defn left-column []
   (instructions
@@ -100,7 +111,7 @@
    :buttons (buttons)})
 
 (defn card [title text]
-  [:div {:class "card"}
+  [:div {:class "card review-card"}
    [:div {:class "card-body"}
     [:h6 {:class "card-title"} title]
     [:textarea {:class "form-control" :rows 3
@@ -110,19 +121,43 @@
     [:div {:class "btn-group"}
      (into [:<>] (buttons))]]])
 
-
 (defn right-column []
   [:<>
-   [:br]
-   [:br]
+    [:label {:class "form-label"} "Your FAS username:"]
+    [:input {:type "text"
+             :class "form-control"
+             :placeholder "Optional - Your FAS username"
+             :value (or @fas (.getItem js/localStorage "fas"))
+             :on-change #(on-change-fas %)}]
+
+   [:label {:class "form-label"} "Interesting snippets:"]
+   (when (not-empty @snippets)
+     [:div {}
+      [:button {:class "btn btn-secondary btn-lg"
+                :on-click #(add-snippet files active-file)} "Add"]
+      [:br]
+      [:br]])
 
    ;; TODO When clicking any of the accordion items, the snippet should display
    ;; in the middle column log file. That will be the only currently highlighted
    ;; snippet, so that it is easily understandable.
    (accordion
-    "ID"
-    [(snippet "This is the annotation for the first snippet")
-     (snippet "And this is for the second snippet")])
+    "accordionItems"
+    (vec (map (fn [x] (snippet (:comment x))) @snippets)))
+
+   (when (empty? @snippets)
+     [:div {:class "card" :id "no-snippets"}
+      [:div {:class "card-body"}
+       [:h5 {:class "card-title"} "No snippets yet"]
+       [:p {:class "card-text"}
+        (str "Please select interesting parts of the log files and press the "
+             "'Add' button to annotate them")]
+       [:button {:class "btn btn-secondary btn-lg"
+                 :on-click #(add-snippet files active-file)}
+        "Add"]]])
+
+
+
 
    [:br]
    (card

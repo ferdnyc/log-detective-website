@@ -301,11 +301,11 @@ a:hover {
   text-align: center;
 }
 
-#app-review #right-column .card-body {
+#right-column .review-card>.card-body  {
   padding: 0px;
 }
 
-#app-review #right-column .card-title {
+#right-column .review-card>*>.card-title {
   background-color: var(--gray-1);
   padding-top: 10px;
   padding-bottom: 10px;

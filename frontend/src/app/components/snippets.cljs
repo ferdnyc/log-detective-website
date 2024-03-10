@@ -61,6 +61,26 @@
       (swap! snippets conj snippet))
     (clear-selection)))
 
+(defn add-snippet-from-backend-map [files active-file map]
+  ;; The `files` and `active-file` parameters needs to be passed as atom
+  ;; references, not their dereferenced value
+
+  ;; TODO Highlight current snippet
+
+  ;; Save the log with highlights, so they are remembered when switching
+  ;; between file tabs
+  ;; FIXME
+  ;; (let [log (.-innerHTML (.getElementById js/document "log"))]
+  ;;   (reset! files (assoc-in @files [@active-file :content] log)))
+
+  (let [snippet
+        {:text nil
+         :start-index (:start_index map)
+         :end-index (:end_index map)
+         :comment (:user_comment map)
+         :file (:name (get @files @active-file))}]
+    (swap! snippets conj snippet)))
+
 ;; For some reason, compiler complains it cannot infer type of the `target`
 ;; variable, so I am specifying it as a workaround
 (defn on-snippet-textarea-change [^js/Event event]
