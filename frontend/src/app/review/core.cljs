@@ -36,8 +36,7 @@
 
 (def votes
   (r/atom {:how-to-fix 0
-           :fail-reason 0
-           :snippets []}))
+           :fail-reason 0}))
 
 (defn init-data-review []
   (let [url (str "/frontend" (remove-trailing-slash (current-path)) "/random")]
@@ -71,7 +70,16 @@
                                 files
                                 active-file
                                 x))
-                             (flatten (map (fn [x] (:snippets x)) @files))))))))))
+                             (flatten (map (fn [x] (:snippets x)) @files)))
+
+                     ;; (->> (count @snippets)
+                     ;;      (range)
+                     ;;      (map (fn [x] {(keyword (str "snippet-" x)) 0}))
+                     ;;      (into {})
+                     ;;      (merge @votes)
+                     ;;      (reset! votes))
+
+                     )))))))
 
 (defn left-column []
   (instructions
@@ -99,7 +107,7 @@
 (defn on-vote-button-click [key value]
   (let [current-value (key @votes)
         value (if (= value current-value) 0 value)]
-  (reset! votes (assoc @votes key value))))
+    (reset! votes (assoc @votes key value))))
 
 (defn buttons [name]
   (let [key (keyword name)]
@@ -116,16 +124,18 @@
                :on-click #(on-vote-button-click key -1)}
       "-1"]]))
 
-(defn snippet [text]
-  {:title "Snippet"
-   :body
-   [:textarea
-    {:class "form-control"
-     :rows "3"
-     :placeholder "What makes this snippet relevant?"
-     :value text
-     :on-change #(on-snippet-textarea-change %)}]
-   :buttons (buttons "foo")})
+(defn snippet [text index]
+  (let [name (str "snippet-" index)]
+    {:title "Snippet"
+     :body
+     [:textarea
+      {:class "form-control"
+       :rows "3"
+       :placeholder "What makes this snippet relevant?"
+       :value text
+       :on-change #(do (on-snippet-textarea-change %)
+                       (on-vote-button-click (keyword name) 1))}]
+     :buttons (buttons name)}))
 
 (defn on-change-form-input [event]
   (let [target (.-target event)
@@ -141,7 +151,8 @@
                 :value text
                 :placeholder placeholder
                 :name name
-                :on-change #(on-change-form-input %)}]
+                :on-change #(do (on-change-form-input %)
+                                (on-vote-button-click (keyword name) 1))}]
     [:div {:class "btn-group"}
      (into [:<>] (buttons name))]]])
 
@@ -168,7 +179,7 @@
    ;; snippet, so that it is easily understandable.
    (accordion
     "accordionItems"
-    (vec (map (fn [x] (snippet (:comment x))) @snippets)))
+    (vec (map-indexed (fn [i x] (snippet (:comment x) i)) @snippets)))
 
    (when (empty? @snippets)
      [:div {:class "card" :id "no-snippets"}
