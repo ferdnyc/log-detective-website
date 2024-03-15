@@ -29,9 +29,15 @@
 (def error-description (r/atom nil))
 (def error-title (r/atom nil))
 (def status (r/atom nil))
-(def form (r/atom {:fas nil
-                   :how-to-fix nil
-                   :fail-reason nil}))
+(def form
+  (r/atom {:fas nil
+           :how-to-fix nil
+           :fail-reason nil}))
+
+(def votes
+  (r/atom {:how-to-fix 0
+           :fail-reason 0
+           :snippets []}))
 
 (defn init-data-review []
   (let [url (str "/frontend" (remove-trailing-slash (current-path)) "/random")]
@@ -59,6 +65,7 @@
                                 (vals (:logs data)))))
 
                      ;; TODO I don't want to use reduce here
+                     ;; TODO Filter only non-empty snippets
                      (reduce (fn [x _]
                                (add-snippet-from-backend-map
                                 files
@@ -89,15 +96,25 @@
 (defn middle-column []
   (editor @files))
 
-(defn buttons []
-  [[:button {:type "button"
-             :class "btn btn-outline-primary"
-             :on-click nil}
-    "+1"]
-   [:button {:type "button"
-             :class "btn btn-outline-danger"
-             :on-click nil}
-    "-1"]])
+(defn on-vote-button-click [key value]
+  (let [current-value (key @votes)
+        value (if (= value current-value) 0 value)]
+  (reset! votes (assoc @votes key value))))
+
+(defn buttons [name]
+  (let [key (keyword name)]
+    [[:button {:type "button"
+               :class ["btn btn-vote" (if (> (key @votes) 0)
+                               "btn-primary"
+                               "btn-outline-primary")]
+               :on-click #(on-vote-button-click key 1)}
+      "+1"]
+     [:button {:type "button"
+               :class ["btn btn-vote" (if (< (key @votes) 0)
+                               "btn-danger"
+                               "btn-outline-danger")]
+               :on-click #(on-vote-button-click key -1)}
+      "-1"]]))
 
 (defn snippet [text]
   {:title "Snippet"
@@ -108,7 +125,7 @@
      :placeholder "What makes this snippet relevant?"
      :value text
      :on-change #(on-snippet-textarea-change %)}]
-   :buttons (buttons)})
+   :buttons (buttons "foo")})
 
 (defn on-change-form-input [event]
   (let [target (.-target event)
@@ -126,7 +143,7 @@
                 :name name
                 :on-change #(on-change-form-input %)}]
     [:div {:class "btn-group"}
-     (into [:<>] (buttons))]]])
+     (into [:<>] (buttons name))]]])
 
 (defn right-column []
   [:<>
