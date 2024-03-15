@@ -23,19 +23,15 @@
     [snippets
      add-snippet
      add-snippet-from-backend-map
-     on-snippet-textarea-change
-     on-click-delete-snippet]]
-   [app.contribute-events :refer
-    [on-how-to-fix-textarea-change
-     on-change-fas
-     on-change-fail-reason
-     on-accordion-item-show]]))
+     on-snippet-textarea-change]]))
 
 (def files (r/atom nil))
 (def error-description (r/atom nil))
 (def error-title (r/atom nil))
 (def status (r/atom nil))
-(def fas (r/atom nil))
+(def form (r/atom {:fas nil
+                   :how-to-fix nil
+                   :fail-reason nil}))
 
 (defn init-data-review []
   (let [url (str "/frontend" (remove-trailing-slash (current-path)) "/random")]
@@ -49,6 +45,10 @@
                      (reset! error-title (:error data))
                      (reset! error-description (:description data)))
                    (do
+                     ;; (swap! form (update))
+                     (reset! form (assoc @form :how-to-fix (:how_to_fix data)))
+                     (reset! form (assoc @form :fail-reason (:fail_reason data)))
+
                      (reset!
                       files
                       (vec (map (fn [log]
@@ -110,14 +110,21 @@
      :on-change #(on-snippet-textarea-change %)}]
    :buttons (buttons)})
 
-(defn card [title text]
+(defn on-change-form-input [event]
+  (let [target (.-target event)
+        key (keyword (.-name target))
+        value (.-value target)]
+    (reset! form (assoc @form key value))))
+
+(defn card [title text name placeholder]
   [:div {:class "card review-card"}
    [:div {:class "card-body"}
     [:h6 {:class "card-title"} title]
     [:textarea {:class "form-control" :rows 3
                 :value text
-                :placeholder "Please describe what caused the build to fail."
-                :on-change #(on-change-fail-reason %)}]
+                :placeholder placeholder
+                :name name
+                :on-change #(on-change-form-input %)}]
     [:div {:class "btn-group"}
      (into [:<>] (buttons))]]])
 
@@ -127,8 +134,9 @@
     [:input {:type "text"
              :class "form-control"
              :placeholder "Optional - Your FAS username"
-             :value (or @fas (.getItem js/localStorage "fas"))
-             :on-change #(on-change-fas %)}]
+             :value (or (:fas @form) (.getItem js/localStorage "fas"))
+             :name "fas"
+             :on-change #(on-change-form-input %)}]
 
    [:label {:class "form-label"} "Interesting snippets:"]
    (when (not-empty @snippets)
@@ -156,18 +164,20 @@
                  :on-click #(add-snippet files active-file)}
         "Add"]]])
 
-
-
-
    [:br]
    (card
     "Why did the build fail?"
-    "Here is some explanation why the build failed")
+    (:fail-reason @form)
+    "fail-reason"
+    "Please describe what caused the build to fail.")
 
    [:br]
    (card
     "How to fix the issue?"
-    "Here is some explanation how to fix the issue")
+    (:how-to-fix @form)
+    "how-to-fix"
+    (str "Please describe how to fix the issue in "
+         "order for the build to succeed."))
 
    [:div {}
     [:label {:class "form-label"} "Ready to submit the results?"]
