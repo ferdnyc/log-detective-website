@@ -1,5 +1,9 @@
 (ns app.components.snippets
-  (:require [reagent.core :as r]))
+  (:require
+   [reagent.core :as r]
+   [reagent.dom.server :refer [render-to-string]]
+
+            ))
 
 (def snippets (r/atom []))
 
@@ -32,13 +36,18 @@
     (.appendChild span (.extractContents rangee))
     (.insertNode rangee span)))
 
-(defn highlight-snippet-in-text [text start end id]
+(defn highlight-snippet-in-text [text snippet]
+  (let [start (:start-index snippet)
+        end (:end-index snippet)
+        id 0] ;; TODO
   (str
    (subs text 0 start)
-   "<span class='snippet' id='" id "'>"
-   (subs text start (inc end))
-   "</span>"
-   (subs text (inc end))))
+   (render-to-string [:span {:class "snippet"
+                             :id id
+                             :title (:comment snippet)
+                             :dangerouslySetInnerHTML
+                             {:__html (subs text start (inc end))}}])
+   (subs text (inc end)))))
 
 (defn selection-node-id []
   (let [base (.-anchorNode (.getSelection js/window))]
@@ -70,31 +79,12 @@
     (clear-selection)))
 
 (defn add-snippet-from-backend-map [files file-index map]
-  ;; The `files` parameter needs to be passed as atom
-  ;; references, not their dereferenced value
-
-  ;; TODO Highlight current snippet
-
-  ;; Save the log with highlights, so they are remembered when switching
-  ;; between file tabs
-  ;; FIXME
-  ;; (let [log (.-innerHTML (.getElementById js/document "log"))]
-  ;;   (reset! files (assoc-in @files [@active-file :content] log)))
-
-  ;; (js/console.log (clj->js map))
-
-  (let [content (:content (get @files file-index))
-        content (highlight-snippet-in-text content (:start_index map) (:end_index map) 0)]
-    (reset! files (assoc-in @files [file-index :content] content)))
-
-  ;; (js/console.log "Adding snippet" (clj->js map))
-
   (let [snippet
         {:text nil
          :start-index (:start_index map)
          :end-index (:end_index map)
          :comment (:user_comment map)
-         :file (:name (get @files file-index))}]
+         :file (:name (get files file-index))}]
     (swap! snippets conj snippet)))
 
 ;; For some reason, compiler complains it cannot infer type of the `target`

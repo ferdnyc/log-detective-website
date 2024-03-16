@@ -64,13 +64,27 @@
                                   (update log :content #(.encode html-entities %)))
                                 (vals (:logs data)))))
 
+                     ;; TODO Move somewhere
+                     (defn index-of-file [name]
+                       (.indexOf (map (fn [x] (:name x)) @files) name))
+
+                     ;; Parse snippets from backend and store them to @snippets
                      (doall (for [file @files
-                                  :let [file-index (.indexOf (map (fn [x] (:name x)) @files) "backend.log")]]
+                                  :let [file-index (index-of-file (:name file))]]
                               (doall (for [snippet (:snippets file)]
                                        (add-snippet-from-backend-map
-                                        files
+                                        @files
                                         file-index
                                         snippet)))))
+
+                     ;; Highlight snippets in the log text
+                     (doall (for [snippet @snippets
+                                  :let [file-index (index-of-file (:file snippet))
+                                        content (:content (get @files file-index))
+                                        content (highlight-snippet-in-text content snippet)]]
+
+
+                       (reset! files (assoc-in @files [file-index :content] content))))
 
                    )))))))
 
