@@ -23,7 +23,8 @@
     [snippets
      add-snippet
      add-snippet-from-backend-map
-     on-snippet-textarea-change]]))
+     on-snippet-textarea-change
+     highlight-snippet-in-text]]))
 
 (def files (r/atom nil))
 (def error-description (r/atom nil))
@@ -63,23 +64,15 @@
                                   (update log :content #(.encode html-entities %)))
                                 (vals (:logs data)))))
 
-                     ;; TODO I don't want to use reduce here
-                     ;; TODO Filter only non-empty snippets
-                     (reduce (fn [x _]
-                               (add-snippet-from-backend-map
-                                files
-                                active-file
-                                x))
-                             (flatten (map (fn [x] (:snippets x)) @files)))
+                     (doall (for [file @files
+                                  :let [file-index (.indexOf (map (fn [x] (:name x)) @files) "backend.log")]]
+                              (doall (for [snippet (:snippets file)]
+                                       (add-snippet-from-backend-map
+                                        files
+                                        file-index
+                                        snippet)))))
 
-                     ;; (->> (count @snippets)
-                     ;;      (range)
-                     ;;      (map (fn [x] {(keyword (str "snippet-" x)) 0}))
-                     ;;      (into {})
-                     ;;      (merge @votes)
-                     ;;      (reset! votes))
-
-                     )))))))
+                   )))))))
 
 (defn left-column []
   (instructions

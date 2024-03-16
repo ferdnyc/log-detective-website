@@ -32,6 +32,14 @@
     (.appendChild span (.extractContents rangee))
     (.insertNode rangee span)))
 
+(defn highlight-snippet-in-text [text start end id]
+  (str
+   (subs text 0 start)
+   "<span class='snippet' id='" id "'>"
+   (subs text start (inc end))
+   "</span>"
+   (subs text (inc end))))
+
 (defn selection-node-id []
   (let [base (.-anchorNode (.getSelection js/window))]
     (if base (.-id (.-parentNode base)) nil)))
@@ -61,8 +69,8 @@
       (swap! snippets conj snippet))
     (clear-selection)))
 
-(defn add-snippet-from-backend-map [files active-file map]
-  ;; The `files` and `active-file` parameters needs to be passed as atom
+(defn add-snippet-from-backend-map [files file-index map]
+  ;; The `files` parameter needs to be passed as atom
   ;; references, not their dereferenced value
 
   ;; TODO Highlight current snippet
@@ -73,12 +81,20 @@
   ;; (let [log (.-innerHTML (.getElementById js/document "log"))]
   ;;   (reset! files (assoc-in @files [@active-file :content] log)))
 
+  ;; (js/console.log (clj->js map))
+
+  (let [content (:content (get @files file-index))
+        content (highlight-snippet-in-text content (:start_index map) (:end_index map) 0)]
+    (reset! files (assoc-in @files [file-index :content] content)))
+
+  ;; (js/console.log "Adding snippet" (clj->js map))
+
   (let [snippet
         {:text nil
          :start-index (:start_index map)
          :end-index (:end_index map)
          :comment (:user_comment map)
-         :file (:name (get @files @active-file))}]
+         :file (:name (get @files file-index))}]
     (swap! snippets conj snippet)))
 
 ;; For some reason, compiler complains it cannot infer type of the `target`
