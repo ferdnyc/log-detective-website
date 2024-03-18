@@ -39,11 +39,23 @@
   (r/atom {:how-to-fix 0
            :fail-reason 0}))
 
+
+;; TODO Move somewhere
+(defn index-of-file [name]
+  (.indexOf (map (fn [x] (:name x)) @files) name))
+
+
+(defn on-accordion-item-show [^js/Event event]
+  (let [snippet-id (int (.-indexNumber (.-dataset (.-target event))))
+        snippet (nth @snippets snippet-id)
+        file-name (:file snippet)]
+    (reset! active-file (index-of-file file-name))))
+
+
 (defn init-data-review []
   (let [url (str "/frontend" (remove-trailing-slash (current-path)) "/random")]
     (-> (fetch/get url {:accept :json :content-type :json})
-        (.then (fn [resp]
-                 (-> resp :body (js->clj :keywordize-keys true))))
+        (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
         (.then (fn [data]
                  (if (:error data)
                    (do
@@ -63,10 +75,6 @@
                                   ;; files dangerously
                                   (update log :content #(.encode html-entities %)))
                                 (vals (:logs data)))))
-
-                     ;; TODO Move somewhere
-                     (defn index-of-file [name]
-                       (.indexOf (map (fn [x] (:name x)) @files) name))
 
                      ;; Parse snippets from backend and store them to @snippets
                      (doall (for [file @files
@@ -226,6 +234,10 @@
      "Submit"]]])
 
 (defn review []
+  ;; The js/document is too general, ideally we would like to limit this
+  ;; only to #accordionItems but it doesn't exist soon enough
+  (.addEventListener js/document "show.bs.collapse" on-accordion-item-show)
+
   (cond
     (= @status "error")
     (render-error @error-title @error-description)
