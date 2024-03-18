@@ -95,15 +95,15 @@
      "We fetched a random sample from our collected data set")
 
     (instructions-item
-     nil
+     (>= (count (dissoc @votes :how-to-fix :fail-reason)) (count @snippets))
      "Go through all snippets and either upvote or downvote them")
 
     (instructions-item
-     nil
+     (not= (:fail-reason @votes) 0)
      "Is the explanation why did the build fail correct?")
 
     (instructions-item
-     nil
+     (not= (:how-to-fix @votes) 0)
      "Is the explanation how to fix the issue correct?")
 
     (instructions-item nil "Submit")]))
@@ -111,10 +111,13 @@
 (defn middle-column []
   (editor @files))
 
+(defn vote [key value]
+  (reset! votes (assoc @votes key value)))
+
 (defn on-vote-button-click [key value]
   (let [current-value (key @votes)
         value (if (= value current-value) 0 value)]
-    (reset! votes (assoc @votes key value))))
+    (vote key value)))
 
 (defn buttons [name]
   (let [key (keyword name)]
@@ -141,7 +144,7 @@
        :placeholder "What makes this snippet relevant?"
        :value text
        :on-change #(do (on-snippet-textarea-change %)
-                       (on-vote-button-click (keyword name) 1))}]
+                       (vote (keyword name) 1))}]
      :buttons (buttons name)}))
 
 (defn on-change-form-input [event]
@@ -159,7 +162,7 @@
                 :placeholder placeholder
                 :name name
                 :on-change #(do (on-change-form-input %)
-                                (on-vote-button-click (keyword name) 1))}]
+                                (vote (keyword name) 1))}]
     [:div {:class "btn-group"}
      (into [:<>] (buttons name))]]])
 
