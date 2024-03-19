@@ -1,7 +1,4 @@
 (ns app.review.core
-  ;; This namespace is WIP and currently not working. Ignore lint errors
-  {:clj-kondo/config '{:linters {:unused-namespace {:level :off}}}}
-
   (:require
    [reagent.core :as r]
    [html-entities :as html-entities]
