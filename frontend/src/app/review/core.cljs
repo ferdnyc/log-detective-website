@@ -6,6 +6,8 @@
    [reagent.core :as r]
    [html-entities :as html-entities]
    [lambdaisland.fetch :as fetch]
+   [ajax.core :refer [GET]]
+   [malli.core :as m]
    [app.helpers :refer
     [current-path
      remove-trailing-slash]]
@@ -51,50 +53,69 @@
         file-name (:file snippet)]
     (reset! active-file (index-of-file file-name))))
 
+(def InputSchema
+  (let [File [:map [:name :string] [:content :string]]]
+    [:map {:closed true}
+     [:username [:maybe :string]] ;; TODO We don't want username from backend
+     [:fail_reason :string]
+     [:how_to_fix :string]
+     [:container_file [:maybe File]]
+     [:spec_file File]
+     [:logs [:map-of :any File]]]))
+
+
+(defn handle-validated-backend-data [data]
+  (reset! form (assoc @form :how-to-fix (:how_to_fix data)))
+  (reset! form (assoc @form :fail-reason (:fail_reason data)))
+
+  (reset!
+   files
+   (vec (map (fn [log]
+               ;; We must html encode all HTML characters
+               ;; because we are going to render the log
+               ;; files dangerously
+               (update log :content #(.encode html-entities %)))
+             (vals (:logs data)))))
+
+  ;; Parse snippets from backend and store them to @snippets
+  (doall (for [file @files
+               :let [file-index (index-of-file (:name file))]]
+           (doall (for [snippet (:snippets file)]
+                    (add-snippet-from-backend-map
+                     @files
+                     file-index
+                     snippet)))))
+
+  ;; Highlight snippets in the log text
+  (doall (for [snippet @snippets
+               :let [file-index (index-of-file (:file snippet))
+                     content (:content (get @files file-index))
+                     content (highlight-snippet-in-text content snippet)]]
+           (reset! files (assoc-in @files [file-index :content] content)))))
+
+(defn handle-backend-error [title description]
+  (reset! status "error")
+  (reset! error-title title)
+  (reset! error-description description))
 
 (defn init-data-review []
-  (let [url (str "/frontend" (remove-trailing-slash (current-path)) "/random")]
-    (-> (fetch/get url {:accept :json :content-type :json})
-        (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
-        (.then (fn [data]
-                 (if (:error data)
-                   (do
-                     (reset! status "error")
-                     (reset! error-title (:error data))
-                     (reset! error-description (:description data)))
-                   (do
-                     ;; (swap! form (update))
-                     (reset! form (assoc @form :how-to-fix (:how_to_fix data)))
-                     (reset! form (assoc @form :fail-reason (:fail_reason data)))
+  (GET (str "/frontend" (remove-trailing-slash (current-path)) "/random")
+       :response-format :json
+       :keywords? true
 
-                     (reset!
-                      files
-                      (vec (map (fn [log]
-                                  ;; We must html encode all HTML characters
-                                  ;; because we are going to render the log
-                                  ;; files dangerously
-                                  (update log :content #(.encode html-entities %)))
-                                (vals (:logs data)))))
+       :error-handler
+       (fn [error]
+         (handle-backend-error
+          (:error (:response error))
+          (:description (:response error))))
 
-                     ;; Parse snippets from backend and store them to @snippets
-                     (doall (for [file @files
-                                  :let [file-index (index-of-file (:name file))]]
-                              (doall (for [snippet (:snippets file)]
-                                       (add-snippet-from-backend-map
-                                        @files
-                                        file-index
-                                        snippet)))))
-
-                     ;; Highlight snippets in the log text
-                     (doall (for [snippet @snippets
-                                  :let [file-index (index-of-file (:file snippet))
-                                        content (:content (get @files file-index))
-                                        content (highlight-snippet-in-text content snippet)]]
-
-
-                       (reset! files (assoc-in @files [file-index :content] content))))
-
-                   )))))))
+       :handler
+       (fn [data]
+         (if (m/validate InputSchema data)
+           (handle-validated-backend-data data)
+           (handle-backend-error
+            "Invalid data"
+            "Got invalid data from the backend. This is likely a bug.")))))
 
 (defn left-column []
   (instructions
