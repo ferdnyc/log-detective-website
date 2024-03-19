@@ -7,7 +7,8 @@
    [malli.core :as m]
    [app.helpers :refer
     [current-path
-     remove-trailing-slash]]
+     remove-trailing-slash
+     fontawesome-icon]]
    [app.editor.core :refer [editor active-file]]
    [app.components.accordion :refer [accordion]]
    [app.components.jumbotron :refer
@@ -152,13 +153,13 @@
                                "btn-primary"
                                "btn-outline-primary")]
                :on-click #(on-vote-button-click key 1)}
-      "+1"]
+      (fontawesome-icon "fa-thumbs-up")]
      [:button {:type "button"
                :class ["btn btn-vote" (if (< (key @votes) 0)
                                "btn-danger"
                                "btn-outline-danger")]
                :on-click #(on-vote-button-click key -1)}
-      "-1"]]))
+      (fontawesome-icon "fa-thumbs-down")]]))
 
 (defn snippet [text index]
   (let [name (str "snippet-" index)]
