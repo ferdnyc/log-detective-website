@@ -3,7 +3,7 @@
    [reagent.core :as r]
    [html-entities :as html-entities]
    [lambdaisland.fetch :as fetch]
-   [ajax.core :refer [GET]]
+   [ajax.core :refer [GET POST]]
    [malli.core :as m]
    [app.helpers :refer
     [current-path
@@ -14,6 +14,7 @@
    [app.components.jumbotron :refer
     [render-error
      loading-screen
+     loading-icon
      render-succeeded]]
    [app.three-column-layout.core :refer
     [three-column-layout
@@ -53,8 +54,9 @@
 
 (def InputSchema
   (let [File [:map [:name :string] [:content :string]]]
-    [:map {:closed true}
-     [:username [:maybe :string]] ;; TODO We don't want username from backend
+    [:map {:closed false} ;; TODO Change to true once we get the right data
+     ;; TODO Some ID needs to be there and we need to send it back
+     ;; [:username [:maybe :string]] ;; TODO We don't want username from backend
      [:fail_reason :string]
      [:how_to_fix :string]
      [:container_file [:maybe File]]
@@ -96,6 +98,13 @@
   (reset! error-title title)
   (reset! error-description description))
 
+(defn handle-validation-error [title description]
+  ;; Go back to "has files" state, let users fix
+  ;; validation errors
+  (reset! status nil)
+  (reset! error-title title)
+  (reset! error-description description))
+
 (defn init-data-review []
   (GET (str "/frontend" (remove-trailing-slash (current-path)) "/random")
        :response-format :json
@@ -114,6 +123,36 @@
            (handle-backend-error
             "Invalid data"
             "Got invalid data from the backend. This is likely a bug.")))))
+
+(defn submit-form []
+  ;; (let [url (remove-trailing-slash (str "/frontend" (current-path)))
+  (let [body {:fail_reason (:fail-reason @form)
+              :how_to_fix (:how-to-fix @form)
+              :username (if (:fas @form) (str "FAS:" (:fas @form)) nil)
+              :snippets @snippets
+              :votes @votes}]
+
+    ;; Remember the username, so we can prefill it the next time
+    (when (:fas @form)
+      (.setItem js/localStorage "fas" (:fas @form)))
+
+    (reset! status "submitting")
+
+    (POST "/frontend/review/"
+          {:params body
+           :response-format :json
+           :format :json
+           :keywords? true
+
+           :error-handler
+           (fn [error]
+             (handle-validation-error
+              (:error (:response error))
+              (:description (:response error))))
+
+           :hanlder
+           (fn [data]
+             (reset! status "submitted"))})))
 
 (defn left-column []
   (instructions
@@ -135,8 +174,28 @@
 
     (instructions-item nil "Submit")]))
 
+;; TODO Copy-pasted. Move to some shared place
+(defn display-error-middle-top []
+  (when @error-description
+    [:div
+     [:div {:class "alert alert-danger alert-dismissible fade show text-center"}
+      [:strong @error-title]
+      [:p @error-description]
+      [:button {:type "button" :class "btn-close" :data-bs-dismiss "alert"}]]]))
+
+;; TODO Copy-pasted. Move to some shared place
+(defn notify-being-uploaded []
+  (when (= @status "submitting")
+    [:h2 {:class "lead text-body-secondary"}
+     (loading-icon)
+     "  Uploading ..."]))
+
 (defn middle-column []
-  (editor @files))
+  [:<>
+   (or
+    (notify-being-uploaded)
+    (display-error-middle-top))
+   [editor @files]])
 
 (defn vote [key value]
   (reset! votes (assoc @votes key value)))
@@ -249,7 +308,7 @@
     [:br]
     [:button {:type "submit"
               :class "btn btn-primary btn-lg"
-              :on-click nil}
+              :on-click #(submit-form)}
      "Submit"]]])
 
 (defn review []
