@@ -275,6 +275,11 @@ def frontend_review_latest() -> FeedbackSchema:
         return FeedbackSchema(**content)
 
 
+@app.post("/frontend/review")
+def frontend_post_review(foo):
+    print(foo)
+
+
 def _make_tpm_tar_file_from_results() -> Iterator[Path]:
     if not FEEDBACK_DIR:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No data found")
