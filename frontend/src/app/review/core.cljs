@@ -125,7 +125,6 @@
             "Got invalid data from the backend. This is likely a bug.")))))
 
 (defn submit-form []
-  ;; (let [url (remove-trailing-slash (str "/frontend" (current-path)))
   (let [body {:fail_reason (:fail-reason @form)
               :how_to_fix (:how-to-fix @form)
               :username (if (:fas @form) (str "FAS:" (:fas @form)) nil)
@@ -190,12 +189,13 @@
      (loading-icon)
      "  Uploading ..."]))
 
-(defn middle-column []
-  [:<>
+(defn status-panel []
    (or
     (notify-being-uploaded)
-    (display-error-middle-top))
-   [editor @files]])
+    (display-error-middle-top)))
+
+(defn middle-column []
+  (editor @files))
 
 (defn vote [key value]
   (reset! votes (assoc @votes key value)))
@@ -327,7 +327,8 @@
     (three-column-layout
      (left-column)
      (middle-column)
-     (right-column))
+     (right-column)
+     (status-panel))
 
     :else
     (loading-screen "Please wait, fetching logs from our dataset.")))

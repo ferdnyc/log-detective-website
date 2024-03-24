@@ -2,10 +2,10 @@
   (:require
    [app.helpers :refer [fontawesome-icon]]))
 
-(defn three-column-layout [left middle right]
+(defn three-column-layout [left middle right panel]
   [:div {:class "row"}
    [:div {:class "col-3" :id "left-column"} left]
-   [:div {:class "col-6" :id "middle-column"} middle]
+   [:div {:class "col-6" :id "middle-column"} panel middle]
    [:div {:class "col-3" :id "right-column"} right]])
 
 (defn instructions-item [done? text]
