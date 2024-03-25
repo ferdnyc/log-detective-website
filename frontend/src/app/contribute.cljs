@@ -256,7 +256,8 @@
       (three-column-layout
        (left-column)
        (middle-column)
-       (right-column)))
+       (right-column)
+       nil))
 
     :else
     (loading-screen "Please wait, fetching logs from the outside world.")))
