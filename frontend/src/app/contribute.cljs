@@ -14,7 +14,6 @@
    [app.components.jumbotron :refer
     [render-error
      loading-screen
-     loading-icon
      render-succeeded]]
    [app.components.accordion :refer [accordion]]
    [app.components.snippets :refer

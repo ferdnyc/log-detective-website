@@ -1,9 +1,7 @@
 (ns app.components.snippets
   (:require
    [reagent.core :as r]
-   [reagent.dom.server :refer [render-to-string]]
-
-            ))
+   [reagent.dom.server :refer [render-to-string]]))
 
 (def snippets (r/atom []))
 
@@ -40,14 +38,14 @@
   (let [start (:start-index snippet)
         end (:end-index snippet)
         id 0] ;; TODO
-  (str
-   (subs text 0 start)
-   (render-to-string [:span {:class "snippet"
-                             :id id
-                             :title (:comment snippet)
-                             :dangerouslySetInnerHTML
-                             {:__html (subs text start (inc end))}}])
-   (subs text (inc end)))))
+    (str
+     (subs text 0 start)
+     (render-to-string [:span {:class "snippet"
+                               :id id
+                               :title (:comment snippet)
+                               :dangerouslySetInnerHTML
+                               {:__html (subs text start (inc end))}}])
+     (subs text (inc end)))))
 
 (defn selection-node-id []
   (let [base (.-anchorNode (.getSelection js/window))]

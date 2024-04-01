@@ -38,6 +38,6 @@
      "  Uploading ..."]))
 
 (defn status-panel [status error-title error-description]
-   (or
-    (notify-being-uploaded status)
-    (display-error-middle-top error-title error-description)))
+  (or
+   (notify-being-uploaded status)
+   (display-error-middle-top error-title error-description)))

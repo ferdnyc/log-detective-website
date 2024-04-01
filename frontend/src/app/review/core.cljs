@@ -1,8 +1,6 @@
 (ns app.review.core
   (:require
-   [reagent.core :as r]
-   [html-entities :as html-entities]
-   [lambdaisland.fetch :as fetch]
+   ["html-entities" :as html-entities]
    [ajax.core :refer [GET POST]]
    [malli.core :as m]
    [app.helpers :refer
@@ -93,22 +91,22 @@
 
 (defn init-data-review []
   (GET (str "/frontend" (remove-trailing-slash (current-path)) "/random")
-       :response-format :json
-       :keywords? true
+    :response-format :json
+    :keywords? true
 
-       :error-handler
-       (fn [error]
-         (handle-backend-error
-          (:error (:response error))
-          (:description (:response error))))
+    :error-handler
+    (fn [error]
+      (handle-backend-error
+       (:error (:response error))
+       (:description (:response error))))
 
-       :handler
-       (fn [data]
-         (if (m/validate InputSchema data)
-           (handle-validated-backend-data data)
-           (handle-backend-error
-            "Invalid data"
-            "Got invalid data from the backend. This is likely a bug.")))))
+    :handler
+    (fn [data]
+      (if (m/validate InputSchema data)
+        (handle-validated-backend-data data)
+        (handle-backend-error
+         "Invalid data"
+         "Got invalid data from the backend. This is likely a bug.")))))
 
 (defn submit-form []
   (let [body {:fail_reason (:fail-reason @form)
@@ -124,20 +122,20 @@
     (reset! status "submitting")
 
     (POST "/frontend/review/"
-          {:params body
-           :response-format :json
-           :format :json
-           :keywords? true
+      {:params body
+       :response-format :json
+       :format :json
+       :keywords? true
 
-           :error-handler
-           (fn [error]
-             (handle-validation-error
-              (:error (:response error))
-              (:description (:response error))))
+       :error-handler
+       (fn [error]
+         (handle-validation-error
+          (:error (:response error))
+          (:description (:response error))))
 
-           :hanlder
-           (fn [data]
-             (reset! status "submitted"))})))
+       :hanlder
+       (fn [_]
+         (reset! status "submitted"))})))
 
 (defn left-column []
   (instructions
@@ -166,14 +164,14 @@
   (let [key (keyword name)]
     [[:button {:type "button"
                :class ["btn btn-vote" (if (> (key @votes) 0)
-                               "btn-primary"
-                               "btn-outline-primary")]
+                                        "btn-primary"
+                                        "btn-outline-primary")]
                :on-click #(on-vote-button-click key 1)}
       (fontawesome-icon "fa-thumbs-up")]
      [:button {:type "button"
                :class ["btn btn-vote" (if (< (key @votes) 0)
-                               "btn-danger"
-                               "btn-outline-danger")]
+                                        "btn-danger"
+                                        "btn-outline-danger")]
                :on-click #(on-vote-button-click key -1)}
       (fontawesome-icon "fa-thumbs-down")]]))
 
@@ -205,13 +203,13 @@
 
 (defn right-column []
   [:<>
-    [:label {:class "form-label"} "Your FAS username:"]
-    [:input {:type "text"
-             :class "form-control"
-             :placeholder "Optional - Your FAS username"
-             :value (or (:fas @form) (.getItem js/localStorage "fas"))
-             :name "fas"
-             :on-change #(on-change-form-input %)}]
+   [:label {:class "form-label"} "Your FAS username:"]
+   [:input {:type "text"
+            :class "form-control"
+            :placeholder "Optional - Your FAS username"
+            :value (or (:fas @form) (.getItem js/localStorage "fas"))
+            :name "fas"
+            :on-change #(on-change-form-input %)}]
 
    [:label {:class "form-label"} "Interesting snippets:"]
    (when (not-empty @snippets)
