@@ -8,7 +8,8 @@
    [app.three-column-layout.core :refer
     [three-column-layout
      instructions-item
-     instructions]]
+     instructions
+     status-panel]]
    [app.editor.core :refer [editor active-file]]
    [app.components.jumbotron :refer
     [render-error
@@ -127,26 +128,8 @@
 
     (instructions-item nil "Submit")]))
 
-(defn display-error-middle-top []
-  (when @error-description
-    [:div
-     [:div {:class "alert alert-danger alert-dismissible fade show text-center"}
-      [:strong @error-title]
-      [:p @error-description]
-      [:button {:type "button" :class "btn-close" :data-bs-dismiss "alert"}]]]))
-
-(defn notify-being-uploaded []
-  (when (= @status "submitting")
-    [:h2 {:class "lead text-body-secondary"}
-     (loading-icon)
-     "  Uploading ..."]))
-
 (defn middle-column []
-  [:<>
-   (or
-    (notify-being-uploaded)
-    (display-error-middle-top))
-   [editor @files]])
+  (editor @files))
 
 (defn accordion-snippet [snippet]
   (when snippet
@@ -257,7 +240,7 @@
        (left-column)
        (middle-column)
        (right-column)
-       nil))
+       (status-panel @status @error-title @error-description)))
 
     :else
     (loading-screen "Please wait, fetching logs from the outside world.")))

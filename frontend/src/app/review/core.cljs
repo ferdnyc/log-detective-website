@@ -14,43 +14,30 @@
    [app.components.jumbotron :refer
     [render-error
      loading-screen
-     loading-icon
      render-succeeded]]
    [app.three-column-layout.core :refer
     [three-column-layout
      instructions-item
-     instructions]]
+     instructions
+     status-panel]]
    [app.components.snippets :refer
     [snippets
      add-snippet
      add-snippet-from-backend-map
      on-snippet-textarea-change
-     highlight-snippet-in-text]]))
-
-(def files (r/atom nil))
-(def error-description (r/atom nil))
-(def error-title (r/atom nil))
-(def status (r/atom nil))
-(def form
-  (r/atom {:fas nil
-           :how-to-fix nil
-           :fail-reason nil}))
-
-(def votes
-  (r/atom {:how-to-fix 0
-           :fail-reason 0}))
-
-
-;; TODO Move somewhere
-(defn index-of-file [name]
-  (.indexOf (map (fn [x] (:name x)) @files) name))
-
-
-(defn on-accordion-item-show [^js/Event event]
-  (let [snippet-id (int (.-indexNumber (.-dataset (.-target event))))
-        snippet (nth @snippets snippet-id)
-        file-name (:file snippet)]
-    (reset! active-file (index-of-file file-name))))
+     highlight-snippet-in-text]]
+   [app.review.logic :refer [index-of-file]]
+   [app.review.events :refer
+    [on-accordion-item-show
+     vote on-vote-button-click
+     on-change-form-input]]
+   [app.review.atoms :refer
+    [files
+     error-description
+     error-title
+     status
+     form
+     votes]]))
 
 (def InputSchema
   (let [File [:map [:name :string] [:content :string]]]
@@ -60,9 +47,8 @@
      [:fail_reason :string]
      [:how_to_fix :string]
      [:container_file [:maybe File]]
-     [:spec_file File]
+     [:spec_file [:maybe File]]
      [:logs [:map-of :any File]]]))
-
 
 (defn handle-validated-backend-data [data]
   (reset! form (assoc @form :how-to-fix (:how_to_fix data)))
@@ -173,37 +159,8 @@
 
     (instructions-item nil "Submit")]))
 
-;; TODO Copy-pasted. Move to some shared place
-(defn display-error-middle-top []
-  (when @error-description
-    [:div
-     [:div {:class "alert alert-danger alert-dismissible fade show text-center"}
-      [:strong @error-title]
-      [:p @error-description]
-      [:button {:type "button" :class "btn-close" :data-bs-dismiss "alert"}]]]))
-
-;; TODO Copy-pasted. Move to some shared place
-(defn notify-being-uploaded []
-  (when (= @status "submitting")
-    [:h2 {:class "lead text-body-secondary"}
-     (loading-icon)
-     "  Uploading ..."]))
-
-(defn status-panel []
-   (or
-    (notify-being-uploaded)
-    (display-error-middle-top)))
-
 (defn middle-column []
   (editor @files))
-
-(defn vote [key value]
-  (reset! votes (assoc @votes key value)))
-
-(defn on-vote-button-click [key value]
-  (let [current-value (key @votes)
-        value (if (= value current-value) 0 value)]
-    (vote key value)))
 
 (defn buttons [name]
   (let [key (keyword name)]
@@ -232,12 +189,6 @@
        :on-change #(do (on-snippet-textarea-change %)
                        (vote (keyword name) 1))}]
      :buttons (buttons name)}))
-
-(defn on-change-form-input [event]
-  (let [target (.-target event)
-        key (keyword (.-name target))
-        value (.-value target)]
-    (reset! form (assoc @form key value))))
 
 (defn card [title text name placeholder]
   [:div {:class "card review-card"}
@@ -270,9 +221,6 @@
       [:br]
       [:br]])
 
-   ;; TODO When clicking any of the accordion items, the snippet should display
-   ;; in the middle column log file. That will be the only currently highlighted
-   ;; snippet, so that it is easily understandable.
    (accordion
     "accordionItems"
     (vec (map-indexed (fn [i x] (snippet (:comment x) i)) @snippets)))
@@ -328,7 +276,7 @@
      (left-column)
      (middle-column)
      (right-column)
-     (status-panel))
+     (status-panel @status @error-title @error-description))
 
     :else
     (loading-screen "Please wait, fetching logs from our dataset.")))
