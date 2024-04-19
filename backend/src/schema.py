@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import AnyUrl, BaseModel, root_validator
 
-from src.constants import BuildIdTitleEnum
+from src.constants import BuildIdTitleEnum, VoteEnum
 
 
 def _check_spec_container_are_exclusively_mutual(_, values):
@@ -97,6 +97,14 @@ class FeedbackInputSchema(_WithoutLogsSchema):
     logs: list[FeedbackLogSchema]
 
 
+class _ReviewVotes(BaseModel):
+    votes: dict[str, VoteEnum]
+
+
+class ReviewInputSchema(_ReviewVotes, FeedbackInputSchema):
+    pass
+
+
 class FeedbackSchema(_WithoutLogsSchema):
     """
     This schema is the final structure as we decided to store our data in json file
@@ -106,8 +114,12 @@ class FeedbackSchema(_WithoutLogsSchema):
     logs: dict[str, FeedbackLogSchema]
 
 
+class ReviewSchema(_ReviewVotes, FeedbackSchema):
+    pass
+
+
 def schema_inp_to_out(
-    inp: FeedbackInputSchema, is_with_spec: bool = True
+    inp: FeedbackInputSchema | ReviewInputSchema, is_with_spec: bool = True
 ) -> FeedbackSchema:
     parsed_log_schema = {}
     for log_schema in inp.logs:
@@ -117,6 +129,16 @@ def schema_inp_to_out(
         spec_or_container = {"spec_file": inp.spec_file}
     else:
         spec_or_container = {"container_file": inp.container_file}
+
+    if isinstance(inp, ReviewInputSchema):
+        return ReviewSchema(
+            username=None,
+            logs=parsed_log_schema,
+            fail_reason=inp.fail_reason,
+            how_to_fix=inp.how_to_fix,
+            votes=inp.votes,
+            **spec_or_container,
+        )
 
     return FeedbackSchema(
         username=inp.username,

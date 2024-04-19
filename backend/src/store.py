@@ -50,18 +50,6 @@ class Storator3000:
         return all_files
 
     @classmethod
-    def get_latest(cls) -> Path:
-        """Sort stored logs by timestamp and return the newest.
-        """
-        files = cls.get_logs()
-        files = sorted(
-            files,
-            key=lambda x: x.split('/')[-1],
-            reverse=True)
-
-        return Path(files[0])
-
-    @classmethod
     def get_random(cls) -> Path:
         # TODO: instead of random, we should go from oldest to newest?
         #  and deprioritize those with reviews

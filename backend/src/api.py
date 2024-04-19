@@ -19,6 +19,7 @@ from src.constants import (
     COPR_BUILD_URL,
     KOJI_BUILD_URL,
     FEEDBACK_DIR,
+    REVIEWS_DIR,
     BuildIdTitleEnum,
     ProvidersEnum,
 )
@@ -266,18 +267,15 @@ def frontend_review_random() -> FeedbackSchema:
         return FeedbackSchema(**content)
 
 
-@app.get("/frontend/review/latest")
-def frontend_review_latest() -> FeedbackSchema:
-    feedback_file = Storator3000.get_latest()
-
-    with open(feedback_file) as file:
-        content = json.loads(file.read())
-        return FeedbackSchema(**content)
-
-
 @app.post("/frontend/review")
-def frontend_post_review(foo):
-    print(foo)
+async def store_random_review(feedback_input: Request) -> OkResponse:
+    # TODO: temporary solution until database is created
+    reviews_dir = Path(REVIEWS_DIR)
+    reviews_dir.mkdir(parents=True, exist_ok=True)
+    with open(reviews_dir / f"{int(datetime.now().timestamp())}.json", "w") as fp:
+        json.dump(await feedback_input.json(), fp, indent=4)
+
+    return OkResponse()
 
 
 def _make_tpm_tar_file_from_results() -> Iterator[Path]:
