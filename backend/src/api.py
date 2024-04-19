@@ -264,7 +264,7 @@ def frontend_review_random():
     random_feedback_file = Storator3000.get_random()
     with open(random_feedback_file) as random_file:
         content = json.loads(random_file.read())
-        return FeedbackSchema(**content).dict() | {"id": random_feedback_file.name}
+        return FeedbackSchema(**content).dict() | {"id": random_feedback_file.name.rstrip(".json")}
 
 
 @app.post("/frontend/review")
@@ -272,8 +272,10 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
     # TODO: temporary solution until database is created
     reviews_dir = Path(REVIEWS_DIR)
     reviews_dir.mkdir(parents=True, exist_ok=True)
-    with open(reviews_dir / f"{int(datetime.now().timestamp())}.json", "w") as fp:
-        json.dump(await feedback_input.json(), fp, indent=4)
+    content = await feedback_input.json()
+    file_name = content.pop("id")
+    with open(reviews_dir / f"{file_name}.json", "w") as fp:
+        json.dump(content, fp, indent=4)
 
     return OkResponse()
 
