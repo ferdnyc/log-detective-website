@@ -7,7 +7,12 @@
      remove-trailing-slash
      previous-siblings]]
    [app.editor.core :refer [active-file]]
-   [app.components.snippets :refer [snippets]]
+   [app.components.snippets :refer
+    [snippets
+     clear-selection
+     highlight-current-snippet
+     selection-node-id
+     selection-contains-snippets?]]
    [app.contribute-logic :refer [file-id]]
    [app.contribute-atoms :refer
     [how-to-fix
@@ -16,6 +21,7 @@
      error-description
      fail-reason
      status
+     files
      fas
      spec
      container]]))
