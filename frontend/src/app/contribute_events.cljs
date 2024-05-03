@@ -78,6 +78,7 @@
                        :else nil))))))
 
 (defn add-snippet []
+  ;; TODO Remove this and use add-snippet from snippets.cljs, got lost during rebase
   (when (and (= (selection-node-id) "log")
              (not (selection-contains-snippets?)))
     (highlight-current-snippet)

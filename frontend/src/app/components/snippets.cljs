@@ -1,7 +1,8 @@
 (ns app.components.snippets
   (:require
    [reagent.core :as r]
-   [reagent.dom.server :refer [render-to-string]]))
+   [reagent.dom.server :refer [render-to-string]]
+   [app.helpers :refer [previous-siblings]]))
 
 (def snippets (r/atom []))
 
@@ -34,10 +35,9 @@
     (.appendChild span (.extractContents rangee))
     (.insertNode rangee span)))
 
-(defn highlight-snippet-in-text [text snippet]
+(defn highlight-snippet-in-text [text snippet id]
   (let [start (:start-index snippet)
-        end (:end-index snippet)
-        id 0] ;; TODO
+        end (:end-index snippet)]
     (str
      (subs text 0 start)
      (render-to-string [:span {:class "snippet"
@@ -65,8 +65,26 @@
 
     (let [selection (.getSelection js/window)
           content (.toString selection)
+
+          ;; The position is calculated from the end of the last node
+          ;; This can be be either a previous snippet span or if the text
+          ;; longer than 65536 characters than it is implictily split into
+          ;; multiple sibling text nodes
           start (.-anchorOffset selection)
+
+          ;; Calculate the real starting index from the beginning of the log
+          offset (->> selection
+                      .-anchorNode
+                      previous-siblings
+                      (map #(.-textContent %))
+                      (map #(count %))
+                      (reduce +))
+          start (+ start offset)
+
+          ;; Index of the last snippet character. When parsing in python, don't
+          ;; forget to do text[start:end+1]
           end (+ start (count content) -1)
+
           snippet
           {:text content
            :start-index start
@@ -83,6 +101,17 @@
          :end-index (:end_index map)
          :comment (:user_comment map)
          :file (:name (get files file-index))}]
+
+    (js/console.log (clj->js snippet))
+
+    (js/console.log
+     (subs (:content (get files file-index))
+           (:start-index snippet)
+           (:end-index snippet)))
+
+
+
+
     (swap! snippets conj snippet)))
 
 ;; For some reason, compiler complains it cannot infer type of the `target`
