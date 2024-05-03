@@ -39,9 +39,9 @@
 
 (def InputSchema
   (let [File [:map [:name :string] [:content :string]]]
-    [:map {:closed false} ;; TODO Change to true once we get the right data
-     ;; TODO Some ID needs to be there and we need to send it back
-     ;; [:username [:maybe :string]] ;; TODO We don't want username from backend
+    [:map {:closed true}
+     [:username [:maybe :string]] ;; TODO We don't want username from backend
+     [:id :string]
      [:fail_reason :string]
      [:how_to_fix :string]
      [:container_file [:maybe File]]
@@ -49,6 +49,7 @@
      [:logs [:map-of :any File]]]))
 
 (defn handle-validated-backend-data [data]
+  (reset! form (assoc @form :id (:id data)))
   (reset! form (assoc @form :how-to-fix (:how_to_fix data)))
   (reset! form (assoc @form :fail-reason (:fail_reason data)))
 
@@ -109,7 +110,8 @@
          "Got invalid data from the backend. This is likely a bug.")))))
 
 (defn submit-form []
-  (let [body {:fail_reason (:fail-reason @form)
+  (let [body {:id (:id @form)
+              :fail_reason (:fail-reason @form)
               :how_to_fix (:how-to-fix @form)
               :username (if (:fas @form) (str "FAS:" (:fas @form)) nil)
               :snippets @snippets
@@ -133,7 +135,7 @@
           (:error (:response error))
           (:description (:response error))))
 
-       :hanlder
+       :handler
        (fn [_]
          (reset! status "submitted"))})))
 
