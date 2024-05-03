@@ -72,10 +72,10 @@
                      snippet)))))
 
   ;; Highlight snippets in the log text
-  (doall (for [snippet @snippets
+  (doall (for [[i snippet] (map-indexed list @snippets)
                :let [file-index (index-of-file (:file snippet))
                      content (:content (get @files file-index))
-                     content (highlight-snippet-in-text content snippet)]]
+                     content (highlight-snippet-in-text content snippet i)]]
            (reset! files (assoc-in @files [file-index :content] content)))))
 
 (defn handle-backend-error [title description]
