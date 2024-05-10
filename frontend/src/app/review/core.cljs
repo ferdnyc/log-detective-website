@@ -111,11 +111,17 @@
 
 (defn submit-form []
   (let [body {:id (:id @form)
-              :fail_reason (:fail-reason @form)
-              :how_to_fix (:how-to-fix @form)
               :username (if (:fas @form) (str "FAS:" (:fas @form)) nil)
-              :snippets @snippets
-              :votes @votes}]
+              :fail_reason {:text (:fail-reason @form)
+                            :vote (:fail-reason @votes)}
+              :how_to_fix  {:text (:how-to-fix @form)
+                            :vote (:how-to-fix @votes)}
+              :snippets (vec (map-indexed
+                              (fn [i x]
+                                (let [k (keyword (str "snippet-" (inc i)))
+                                      vote (k @votes 0)]
+                                  (assoc x :vote vote)))
+                              @snippets))}]
 
     ;; Remember the username, so we can prefill it the next time
     (when (:fas @form)
