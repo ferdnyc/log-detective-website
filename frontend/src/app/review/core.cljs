@@ -124,6 +124,7 @@
                               @snippets))}]
 
     ;; Remember the username, so we can prefill it the next time
+    ;; TODO See PR #130
     (when (:fas @form)
       (.setItem js/localStorage "fas" (:fas @form)))
 
@@ -215,6 +216,7 @@
    [:input {:type "text"
             :class "form-control"
             :placeholder "Optional - Your FAS username"
+            ;; TODO See PR #130
             :value (or (:fas @form) (.getItem js/localStorage "fas"))
             :name "fas"
             :on-change #(on-change-form-input %)}]
