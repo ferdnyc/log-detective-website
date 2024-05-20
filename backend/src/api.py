@@ -273,6 +273,8 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
     reviews_dir = Path(REVIEWS_DIR)
     reviews_dir.mkdir(parents=True, exist_ok=True)
     content = await feedback_input.json()
+    print(content)
+    return OkResponse()
     file_name = content.pop("id")
     with open(reviews_dir / f"{file_name}.json", "w") as fp:
         json.dump(content, fp, indent=4)
