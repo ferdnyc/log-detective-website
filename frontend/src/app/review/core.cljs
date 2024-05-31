@@ -2,6 +2,7 @@
   (:require
    ["html-entities" :as html-entities]
    [ajax.core :refer [GET POST]]
+   [reagent.dom.server :refer [render-to-string]]
    [malli.core :as m]
    [app.helpers :refer
     [current-path
@@ -48,35 +49,46 @@
      [:spec_file [:maybe File]]
      [:logs [:map-of :any File]]]))
 
+(defn highlight-snippets-withing-log [log]
+  (let [
+        ;; FIXME This causes infinite loading screen
+        ; snippets (sort-by :start_index snippets)
+
+        snippets (map-indexed
+                  (fn [idx itm]
+                    (assoc itm
+                           :text (highlight-snippet-in-text
+                                  idx
+                                  (.encode html-entities (subs (:content log) (:start_index itm) (:end_index itm)))
+                                  (:user_comment itm))))
+                  (:snippets log))
+
+        content [:<>
+                 (subs (:content log) 0 (:start_index (first snippets)))
+                 (for [[a b] (partition 2 snippets)]
+                   [(:text a)
+                    (subs (:content log) (:end_index a) (:start_index b))
+                    (:text b)])
+                 (subs (:content log) (:end_index (second snippets)))]]
+
+    (assoc log :content content)))
+
 (defn handle-validated-backend-data [data]
   (reset! form (assoc @form :id (:id data)))
   (reset! form (assoc @form :how-to-fix (:how_to_fix data)))
   (reset! form (assoc @form :fail-reason (:fail_reason data)))
-
-  (reset!
-   files
-   (vec (map (fn [log]
-               ;; We must html encode all HTML characters
-               ;; because we are going to render the log
-               ;; files dangerously
-               (update log :content #(.encode html-entities %)))
-             (vals (:logs data)))))
+  (reset! files (vec (map highlight-snippets-withing-log (vals (:logs data)))))
 
   ;; Parse snippets from backend and store them to @snippets
-  (doall (for [file @files
+  (doall (for [file (vals (:logs data))
                :let [file-index (index-of-file (:name file))]]
            (doall (for [snippet (:snippets file)]
-                    (add-snippet-from-backend-map
-                     @files
-                     file-index
-                     snippet)))))
+                    (do
+                      (add-snippet-from-backend-map
+                       @files
+                       file-index
+                       snippet)))))))
 
-  ;; Highlight snippets in the log text
-  (doall (for [[i snippet] (map-indexed list @snippets)
-               :let [file-index (index-of-file (:file snippet))
-                     content (:content (get @files file-index))
-                     content (highlight-snippet-in-text content snippet i)]]
-           (reset! files (assoc-in @files [file-index :content] content)))))
 
 (defn handle-backend-error [title description]
   (reset! status "error")

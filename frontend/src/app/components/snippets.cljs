@@ -35,17 +35,14 @@
     (.appendChild span (.extractContents rangee))
     (.insertNode rangee span)))
 
-(defn highlight-snippet-in-text [text snippet id]
-  (let [start (:start-index snippet)
-        end (:end-index snippet)]
-    (str
-     (subs text 0 start)
-     (render-to-string [:span {:class "snippet"
-                               :id id
-                               :title (:comment snippet)
-                               :dangerouslySetInnerHTML
-                               {:__html (subs text start (inc end))}}])
-     (subs text (inc end)))))
+;; TODO Rename ... this doesn't highlight snippets in text, this makes the whole text a snippet
+(defn highlight-snippet-in-text [id text comment]
+   (render-to-string
+    [:span {:class "snippet"
+            :id id
+            :title comment
+            :dangerouslySetInnerHTML
+            {:__html text}}]))
 
 (defn selection-node-id []
   (let [base (.-anchorNode (.getSelection js/window))]
@@ -101,17 +98,6 @@
          :end-index (:end_index map)
          :comment (:user_comment map)
          :file (:name (get files file-index))}]
-
-    (js/console.log (clj->js snippet))
-
-    (js/console.log
-     (subs (:content (get files file-index))
-           (:start-index snippet)
-           (:end-index snippet)))
-
-
-
-
     (swap! snippets conj snippet)))
 
 ;; For some reason, compiler complains it cannot infer type of the `target`
