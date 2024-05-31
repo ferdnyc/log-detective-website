@@ -50,19 +50,20 @@
      [:logs [:map-of :any File]]]))
 
 (defn highlight-snippets-withing-log [log]
-  (let [snippets (:snippets log)
-        snippets (sort-by :start_index snippets)
-        snippets (map-indexed
-                  (fn [idx itm]
-                    (assoc itm
-                           :text (highlight-snippet-in-text
-                                  idx
-                                  (.encode html-entities (subs (:content log) (:start_index itm) (:end_index itm)))
-                                  (:user_comment itm))))
-                  (:snippets log))
+  (let [snippets
+        (->> (:snippets log)
+             (sort-by :start_index)
+             (map-indexed
+              (fn [idx itm]
+                (let [text (subs (:content log)
+                                 (:start_index itm)
+                                 (:end_index itm))]
+                  (assoc itm :text (highlight-snippet-in-text
+                                    idx
+                                    (.encode html-entities text)
+                                    (:user_comment itm)))))))
 
-        content [:<>
-                 (subs (:content log) 0 (:start_index (first snippets)))
+        content [(subs (:content log) 0 (:start_index (first snippets)))
                  (for [[a b] (partition 2 snippets)]
                    [(:text a)
                     (subs (:content log) (:end_index a) (:start_index b))
@@ -86,7 +87,6 @@
                        @files
                        file-index
                        snippet)))))))
-
 
 (defn handle-backend-error [title description]
   (reset! status "error")
