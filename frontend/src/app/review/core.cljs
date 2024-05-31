@@ -50,10 +50,8 @@
      [:logs [:map-of :any File]]]))
 
 (defn highlight-snippets-withing-log [log]
-  (let [
-        ;; FIXME This causes infinite loading screen
-        ; snippets (sort-by :start_index snippets)
-
+  (let [snippets (:snippets log)
+        snippets (sort-by :start_index snippets)
         snippets (map-indexed
                   (fn [idx itm]
                     (assoc itm
