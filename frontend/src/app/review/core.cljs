@@ -82,11 +82,10 @@
   (doall (for [file (vals (:logs data))
                :let [file-index (index-of-file (:name file))]]
            (doall (for [snippet (:snippets file)]
-                    (do
-                      (add-snippet-from-backend-map
-                       @files
-                       file-index
-                       snippet)))))))
+                    (add-snippet-from-backend-map
+                     @files
+                     file-index
+                     snippet))))))
 
 (defn handle-backend-error [title description]
   (reset! status "error")
