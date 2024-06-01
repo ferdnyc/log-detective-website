@@ -127,7 +127,7 @@
                             :vote (:how-to-fix @votes)}
               :snippets (vec (map-indexed
                               (fn [i x]
-                                (let [k (keyword (str "snippet-" (inc i)))
+                                (let [k (keyword (str "snippet-" i))
                                       vote (k @votes 0)]
                                   (assoc x :vote vote)))
                               @snippets))}]
