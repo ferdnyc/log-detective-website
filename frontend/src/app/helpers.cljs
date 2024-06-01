@@ -1,6 +1,7 @@
 (ns app.helpers
   (:require
-   [clojure.string :as str]))
+   [clojure.string :as str]
+   ["html-entities" :as html-entities]))
 
 (defn current-path []
   (.-pathname (.-location js/window)))
@@ -16,3 +17,6 @@
     (if-not sibling
       []
       (conj (previous-siblings sibling) sibling))))
+
+(defn safe [text]
+  (.encode html-entities text))

@@ -1,12 +1,12 @@
 (ns app.review.core
   (:require
-   ["html-entities" :as html-entities]
    [ajax.core :refer [GET POST]]
    [reagent.dom.server :refer [render-to-string]]
    [malli.core :as m]
    [app.helpers :refer
     [current-path
      remove-trailing-slash
+     safe
      fontawesome-icon]]
    [app.editor.core :refer [editor active-file]]
    [app.components.accordion :refer [accordion]]
@@ -24,7 +24,7 @@
      add-snippet
      add-snippet-from-backend-map
      on-snippet-textarea-change
-     highlight-snippet-in-text]]
+     highlight-text]]
    [app.review.logic :refer [index-of-file]]
    [app.review.events :refer
     [on-accordion-item-show
@@ -57,18 +57,20 @@
               (fn [idx itm]
                 (let [text (subs (:content log)
                                  (:start_index itm)
-                                 (:end_index itm))]
-                  (assoc itm :text (highlight-snippet-in-text
-                                    idx
-                                    (.encode html-entities text)
-                                    (:user_comment itm)))))))
+                                 (:end_index itm))
+                      text (highlight-text idx (safe text) (:user_comment itm))]
+                  (assoc itm :text text)))))
 
-        content [(subs (:content log) 0 (:start_index (first snippets)))
-                 (for [[a b] (partition 2 snippets)]
-                   [(:text a)
-                    (subs (:content log) (:end_index a) (:start_index b))
-                    (:text b)])
-                 (subs (:content log) (:end_index (second snippets)))]]
+        content
+        (->>
+         [(safe (subs (:content log) 0 (:start_index (first snippets))))
+          (for [[a b] (partition 2 snippets)]
+            [(:text a)
+             (safe (subs (:content log) (:end_index a) (:start_index b)))
+             (:text b)])
+          (safe (subs (:content log) (:end_index (second snippets))))]
+         (flatten)
+         (apply str))]
 
     (assoc log :content content)))
 

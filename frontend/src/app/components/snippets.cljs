@@ -27,6 +27,7 @@
   ;; https://itecnote.com/tecnote/javascript-selected-text-highlighting-prob/
   ;; and translated it from Javascript to ClojureScript using:
   ;; https://roman01la.github.io/javascript-to-clojurescript/
+  ;; TODO This can be easily refactored to use `highlight-text'
   (let [rangee (.getRangeAt (.getSelection js/window) 0)
         span (.createElement js/document "span")]
     (set! (.-className span) "snippet")
@@ -35,8 +36,7 @@
     (.appendChild span (.extractContents rangee))
     (.insertNode rangee span)))
 
-;; TODO Rename ... this doesn't highlight snippets in text, this makes the whole text a snippet
-(defn highlight-snippet-in-text [id text comment]
+(defn highlight-text [id text comment]
    (render-to-string
     [:span {:class "snippet"
             :id id
