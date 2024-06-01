@@ -93,7 +93,7 @@
 
 (defn add-snippet-from-backend-map [files file-index map]
   (let [snippet
-        {:text nil
+        {:text (:text map)
          :start-index (:start_index map)
          :end-index (:end_index map)
          :comment (:user_comment map)
