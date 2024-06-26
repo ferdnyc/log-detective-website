@@ -9,7 +9,7 @@
       :data-bs-toggle "collapse"
       :data-bs-target (str "#itemCollapse" i)
       :aria-controls (str "itemCollapse" i)}
-     (str (:title item) " " (+ i 1))]]
+     [:<> (:title item) " " i]]]
 
    [:div {:id (str "itemCollapse" i)
           :class ["accordion-collapse collapse" (if show? "show" nil)]

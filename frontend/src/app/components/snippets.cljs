@@ -16,6 +16,12 @@
                 "#E99695"]]
     (nth colors (mod id (count colors)))))
 
+(defn snippet-color-square [color]
+  [:span {:style {:width 15
+                  :height 15
+                  :margin-right 10
+                  :background-color color}}])
+
 (defn clear-selection []
   ;; Generated from
   ;; https://stackoverflow.com/a/13415236/3285282

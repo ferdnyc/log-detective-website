@@ -25,6 +25,7 @@
      add-snippet-from-backend-map
      on-snippet-textarea-change
      snippet-color
+     snippet-color-square
      highlight-text]]
    [app.review.logic :refer [index-of-file]]
    [app.review.events :refer
@@ -205,9 +206,9 @@
                :on-click #(on-vote-button-click key -1)}
       (fontawesome-icon "fa-thumbs-down")]]))
 
-(defn snippet [text index]
+(defn snippet [text index color]
   (let [name (str "snippet-" index)]
-    {:title "Snippet"
+    {:title [:<> (snippet-color-square color) "Snippet"]
      :body
      [:textarea
       {:class "form-control"
@@ -252,7 +253,7 @@
 
    (accordion
     "accordionItems"
-    (vec (map-indexed (fn [i x] (snippet (:comment x) i)) @snippets)))
+    (vec (map-indexed (fn [i x] (snippet (:comment x) i (:color x))) @snippets)))
 
    (when (empty? @snippets)
      [:div {:class "card" :id "no-snippets"}

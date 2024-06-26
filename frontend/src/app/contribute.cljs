@@ -19,6 +19,7 @@
    [app.components.snippets :refer
     [snippets
      add-snippet
+     snippet-color-square
      on-click-delete-snippet
      on-snippet-textarea-change]]
    [app.contribute-atoms :refer
@@ -132,7 +133,7 @@
 
 (defn accordion-snippet [snippet]
   (when snippet
-    {:title "Snippet"
+    {:title [:<> (snippet-color-square (:color snippet)) "Snippet"]
      :body
      [:textarea
       {:class "form-control"
