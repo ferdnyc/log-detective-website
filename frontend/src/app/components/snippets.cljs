@@ -31,7 +31,7 @@
       (some (fn [span] (.containsNode selection span true))
             spans))))
 
-(defn highlight-current-snippet []
+(defn highlight-current-snippet [color]
   ;; The implementation heavily relies on JavaScript interop. I took the
   ;; "Best Solution" code from:
   ;; https://itecnote.com/tecnote/javascript-selected-text-highlighting-prob/
@@ -39,8 +39,7 @@
   ;; https://roman01la.github.io/javascript-to-clojurescript/
   ;; TODO This can be easily refactored to use `highlight-text'
   (let [rangee (.getRangeAt (.getSelection js/window) 0)
-        span (.createElement js/document "span")
-        color (snippet-color (count @snippets))]
+        span (.createElement js/document "span")]
     (set! (.-className span) "snippet")
     (set! (.-style span) (str "background-color: " color))
     (set! (.-id span) (str "snippet-" (count @snippets)))
@@ -48,12 +47,12 @@
     (.appendChild span (.extractContents rangee))
     (.insertNode rangee span)))
 
-(defn highlight-text [id text comment]
+(defn highlight-text [id text comment color]
    (render-to-string
     [:span {:class "snippet"
             :id id
             :title comment
-            :style {:background-color (snippet-color id)}
+            :style {:background-color color}
             :dangerouslySetInnerHTML
             {:__html text}}]))
 
@@ -66,42 +65,45 @@
   ;; references, not their dereferenced value
   (when (and (= (selection-node-id) "log")
              (not (selection-contains-snippets?)))
-    (highlight-current-snippet)
 
-    ;; Save the log with highlights, so they are remembered when switching
-    ;; between file tabs
-    (let [log (.-innerHTML (.getElementById js/document "log"))]
-      (reset! files (assoc-in @files [@active-file :content] log)))
+    (let [color (snippet-color (count @snippets))]
+      (highlight-current-snippet color)
 
-    (let [selection (.getSelection js/window)
-          content (.toString selection)
+      ;; Save the log with highlights, so they are remembered when switching
+      ;; between file tabs
+      (let [log (.-innerHTML (.getElementById js/document "log"))]
+        (reset! files (assoc-in @files [@active-file :content] log)))
 
-          ;; The position is calculated from the end of the last node
-          ;; This can be be either a previous snippet span or if the text
-          ;; longer than 65536 characters than it is implictily split into
-          ;; multiple sibling text nodes
-          start (.-anchorOffset selection)
+      (let [selection (.getSelection js/window)
+            content (.toString selection)
 
-          ;; Calculate the real starting index from the beginning of the log
-          offset (->> selection
-                      .-anchorNode
-                      previous-siblings
-                      (map #(.-textContent %))
-                      (map #(count %))
-                      (reduce +))
-          start (+ start offset)
+            ;; The position is calculated from the end of the last node
+            ;; This can be be either a previous snippet span or if the text
+            ;; longer than 65536 characters than it is implictily split into
+            ;; multiple sibling text nodes
+            start (.-anchorOffset selection)
 
-          ;; Index of the last snippet character. When parsing in python, don't
-          ;; forget to do text[start:end+1]
-          end (+ start (count content) -1)
+            ;; Calculate the real starting index from the beginning of the log
+            offset (->> selection
+                        .-anchorNode
+                        previous-siblings
+                        (map #(.-textContent %))
+                        (map #(count %))
+                        (reduce +))
+            start (+ start offset)
 
-          snippet
-          {:text content
-           :start-index start
-           :end-index end
-           :comment nil
-           :file (:name (get @files @active-file))}]
-      (swap! snippets conj snippet))
+            ;; Index of the last snippet character. When parsing in python, don't
+            ;; forget to do text[start:end+1]
+            end (+ start (count content) -1)
+
+            snippet
+            {:text content
+             :start-index start
+             :end-index end
+             :comment nil
+             :color color
+             :file (:name (get @files @active-file))}]
+        (swap! snippets conj snippet)))
     (clear-selection)))
 
 (defn add-snippet-from-backend-map [files file-index map]
@@ -110,7 +112,8 @@
          :start-index (:start_index map)
          :end-index (:end_index map)
          :comment (:user_comment map)
-         :file (:name (get files file-index))}]
+         :file (:name (get files file-index))
+         :color (snippet-color (count @snippets))}]
     (swap! snippets conj snippet)))
 
 ;; For some reason, compiler complains it cannot infer type of the `target`

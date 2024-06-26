@@ -24,6 +24,7 @@
      add-snippet
      add-snippet-from-backend-map
      on-snippet-textarea-change
+     snippet-color
      highlight-text]]
    [app.review.logic :refer [index-of-file]]
    [app.review.events :refer
@@ -58,7 +59,10 @@
                 (let [text (subs (:content log)
                                  (:start_index itm)
                                  (:end_index itm))
-                      text (highlight-text idx (safe text) (:user_comment itm))]
+                      text (highlight-text idx
+                                           (safe text)
+                                           (:user_comment itm)
+                                           (:color (nth @snippets idx)))]
                   (assoc itm :text text)))))
 
         content
@@ -78,7 +82,6 @@
   (reset! form (assoc @form :id (:id data)))
   (reset! form (assoc @form :how-to-fix (:how_to_fix data)))
   (reset! form (assoc @form :fail-reason (:fail_reason data)))
-  (reset! files (vec (map highlight-snippets-withing-log (vals (:logs data)))))
 
   ;; Parse snippets from backend and store them to @snippets
   (doall (for [file (vals (:logs data))
@@ -87,7 +90,14 @@
                     (add-snippet-from-backend-map
                      @files
                      file-index
-                     snippet))))))
+                     snippet)))))
+
+  (reset! snippets
+          (map-indexed
+           (fn [i x] (assoc x :color (snippet-color i)))
+           @snippets))
+
+  (reset! files (vec (map highlight-snippets-withing-log (vals (:logs data))))))
 
 (defn handle-backend-error [title description]
   (reset! status "error")

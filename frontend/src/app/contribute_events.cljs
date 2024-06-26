@@ -77,48 +77,6 @@
 
                        :else nil))))))
 
-(defn add-snippet []
-  ;; TODO Remove this and use add-snippet from snippets.cljs, got lost during rebase
-  (when (and (= (selection-node-id) "log")
-             (not (selection-contains-snippets?)))
-    (highlight-current-snippet)
-
-    ;; Save the log with highlights, so they are remembered when switching
-    ;; between file tabs
-    (let [log (.-innerHTML (.getElementById js/document "log"))]
-      (reset! files (assoc-in @files [@active-file :content] log)))
-
-    (let [selection (.getSelection js/window)
-          content (.toString selection)
-
-          ;; The position is calculated from the end of the last node
-          ;; This can be be either a previous snippet span or if the text
-          ;; longer than 65536 characters than it is implictily split into
-          ;; multiple sibling text nodes
-          start (.-anchorOffset selection)
-
-          ;; Calculate the real starting index from the beginning of the log
-          offset (->> selection
-                      .-anchorNode
-                      previous-siblings
-                      (map #(.-textContent %))
-                      (map #(count %))
-                      (reduce +))
-          start (+ start offset)
-
-          ;; Index of the last snippet character. When parsing in python, don't
-          ;; forget to do text[start:end+1]
-          end (+ start (count content) -1)
-
-          snippet
-          {:text content
-           :start-index start
-           :end-index end
-           :comment nil
-           :file (:name (get @files @active-file))}]
-      (swap! snippets conj snippet))
-    (clear-selection)))
-
 (defn on-how-to-fix-textarea-change [target]
   (reset! how-to-fix (.-value target)))
 
