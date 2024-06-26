@@ -191,10 +191,6 @@ a:hover {
   --bs-btn-active-border-color: var(--newblue);
 }
 
-.snippet {
-  background-color: var(--lightpurple);
-}
-
 #left-column h4 {
   color: var(--darkblue);
 }

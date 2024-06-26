@@ -6,6 +6,16 @@
 
 (def snippets (r/atom []))
 
+(defn snippet-color [id]
+  (let [colors ["#D4C5F9"
+                "#C2E0C6"
+                "#C5DEF5"
+                "#FEF2C0"
+                "#BFD4F2"
+                "#BFDADC"
+                "#E99695"]]
+    (nth colors (mod id (count colors)))))
+
 (defn clear-selection []
   ;; Generated from
   ;; https://stackoverflow.com/a/13415236/3285282
@@ -29,8 +39,10 @@
   ;; https://roman01la.github.io/javascript-to-clojurescript/
   ;; TODO This can be easily refactored to use `highlight-text'
   (let [rangee (.getRangeAt (.getSelection js/window) 0)
-        span (.createElement js/document "span")]
+        span (.createElement js/document "span")
+        color (snippet-color (count @snippets))]
     (set! (.-className span) "snippet")
+    (set! (.-style span) (str "background-color: " color))
     (set! (.-id span) (str "snippet-" (count @snippets)))
     (set! (.-index-number (.-dataset span)) (count @snippets))
     (.appendChild span (.extractContents rangee))
@@ -41,6 +53,7 @@
     [:span {:class "snippet"
             :id id
             :title comment
+            :style {:background-color (snippet-color id)}
             :dangerouslySetInnerHTML
             {:__html text}}]))
 
