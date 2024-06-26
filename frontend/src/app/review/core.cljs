@@ -94,9 +94,9 @@
                      snippet)))))
 
   (reset! snippets
-          (map-indexed
-           (fn [i x] (assoc x :color (snippet-color i)))
-           @snippets))
+          (vec (map-indexed
+                (fn [i x] (assoc x :color (snippet-color i)))
+                @snippets)))
 
   (reset! files (vec (map highlight-snippets-withing-log (vals (:logs data))))))
 
