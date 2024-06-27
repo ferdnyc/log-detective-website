@@ -132,7 +132,13 @@
 
 (defn on-click-delete-snippet [^js/Event event]
   (let [target (.-target event)
-        snippet-id (int (.-indexNumber (.-dataset (.-parentElement target))))]
+        snippet-id (-> target
+                       .-parentElement
+                       .-parentElement
+                       .-dataset
+                       .-indexNumber
+                       int)]
+
     ;; We don't want to remove the element entirely because we want to preserve
     ;; snippet numbers that follows
     (swap! snippets assoc snippet-id nil)
