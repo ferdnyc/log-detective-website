@@ -84,6 +84,10 @@
   (reset! form (assoc @form :how-to-fix (:how_to_fix data)))
   (reset! form (assoc @form :fail-reason (:fail_reason data)))
 
+  ;; First we need to set the files, so that snippets can point to them. We
+  ;; will highlight them later
+  (reset! files (vec (vals (:logs data))))
+
   ;; Parse snippets from backend and store them to @snippets
   (doall (for [file (vals (:logs data))
                :let [file-index (index-of-file (:name file))]]
