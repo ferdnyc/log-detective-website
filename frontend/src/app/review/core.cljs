@@ -252,9 +252,10 @@
      [:div {}
       [:button {:class "btn btn-secondary btn-lg"
                 :on-click #(add-snippet files active-file)} "Add"]
-      [:br]
       [:br]])
 
+   [:label {:class "form-label"}
+    "You can edit existing snippets. This will automatically upvote them."]
    (accordion
     "accordionItems"
     (vec (map-indexed (fn [i x] (snippet (:comment x) i (:color x))) @snippets)))
