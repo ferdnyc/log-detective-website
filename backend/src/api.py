@@ -35,9 +35,10 @@ from src.schema import (
     ContributeResponseSchema,
     FeedbackInputSchema,
     FeedbackSchema,
+    FeedbackLogSchema,
     schema_inp_to_out,
 )
-from src.spells import make_tar, get_temporary_dir
+from src.spells import make_tar, get_temporary_dir, find_file_by_name
 from src.store import Storator3000
 
 logger = logging.getLogger(__name__)
@@ -267,17 +268,63 @@ def frontend_review_random():
         return FeedbackSchema(**content).dict() | {"id": random_feedback_file.name.rstrip(".json")}
 
 
+def _get_text_from_feedback(item: dict) -> str:
+    if item["vote"] != 1:
+        return ""
+
+    return item["text"]
+
+
+def _parse_snippet(snippet: dict) -> dict:
+    return {
+        "start_index": snippet["start-index"],
+        "end_index": snippet["end-index"],
+        "user_comment": snippet["comment"],
+        "text": snippet["text"],
+    }
+
+
+def _parse_logs(logs_orig: dict[str, FeedbackLogSchema], review_snippets: list[dict]) -> dict:
+    for name, item in logs_orig.items():
+        item.snippets = []
+        for snippet in review_snippets:
+            if snippet["file"] == name and snippet["vote"] == 1:
+                item.snippets.append(_parse_snippet(snippet))
+
+
+def _parse_feedback(review: dict, origin_id: int) -> FeedbackSchema:
+    original_file_path = find_file_by_name(f"{origin_id}.json", Path(FEEDBACK_DIR))
+    with open(original_file_path) as fp:
+        original_content = json.load(fp)
+        schema = FeedbackSchema(**original_content)
+        # no reason to store username
+        schema.username = None
+        schema.fail_reason = _get_text_from_feedback(review["fail_reason"])
+        schema.how_to_fix = _get_text_from_feedback(review["how_to_fix"])
+        _parse_logs(schema.logs, review["snippets"])
+        return schema.dict(exclude_unset=True)
+
+
 @app.post("/frontend/review")
 async def store_random_review(feedback_input: Request) -> OkResponse:
-    # TODO: temporary solution until database is created
+    # TODO: temporary silly solution until database is created
+    #  (missing provider but we can dig it from original feedback file)
     reviews_dir = Path(REVIEWS_DIR)
-    reviews_dir.mkdir(parents=True, exist_ok=True)
+    parsed_reviews_dir = reviews_dir / "parsed"
+    parsed_reviews_dir.mkdir(parents=True, exist_ok=True)
     content = await feedback_input.json()
-    print(content)
-    return OkResponse()
-    file_name = content.pop("id")
+    original_file_id = content.pop("id")
+    # avoid duplicates - same ID can be reviewed multiple times
+    file_name = original_file_id + "-" + str(int(datetime.now().timestamp()))
     with open(reviews_dir / f"{file_name}.json", "w") as fp:
-        json.dump(content, fp, indent=4)
+        json.dump(content | {"id": original_file_id}, fp, indent=4)
+
+    with open(parsed_reviews_dir / f"{file_name}.json", "w") as fp:
+        json.dump(
+            _parse_feedback(content, original_file_id) | {"id": original_file_id},
+            fp,
+            indent=4
+        )
 
     return OkResponse()
 

@@ -1,5 +1,5 @@
 import os
-from enum import Enum, StrEnum
+from enum import StrEnum
 
 
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{0}"
@@ -28,8 +28,3 @@ class BuildIdTitleEnum(StrEnum):
     url = "URL"
     container = "Container log"
     debug = "Debug output"
-
-
-class VoteEnum(Enum):
-    up = 1
-    down = -1
